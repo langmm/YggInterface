@@ -194,7 +194,7 @@ jobs:
       - name: Set flags so there is an error if an optional dependency isn't found
         shell: bash -l {0}
         run: |
-          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DREQUIRE_ZMQ=ON -DREQUIRE_MPI=ON -DREQUIRE_RMQ=ON -DREQUIRE_THREADS=ON -DREQUIRE_REST=ON -REQUIRE_OMP=ON" >> "$GITHUB_ENV"
+          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DREQUIRE_ZMQ=ON -DREQUIRE_MPI=ON -DREQUIRE_RMQ=ON -DREQUIRE_THREADS=ON -DREQUIRE_REST=ON -DREQUIRE_OMP=ON" >> "$GITHUB_ENV"
       - name: IPC config flags
         if: matrix.os != 'windows-2022'
         shell: bash -l {0}
@@ -423,11 +423,12 @@ jobs:
       - name: Show shell hook
         run: pixi shell-hook -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }}
       - name: Run tests
+        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test allnopy "-DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_TESTS=ON -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_Python_TESTS=OFF" -- --output-on-failure --verbose
+      - name: Run Python tests
+        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-python -- --output-on-failure --verbose
+      - name: Run speed tests
         if: matrix.pixi-environment-variant != '-core'
-        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} all-tests -- --output-on-failure --verbose
-      - name: Run tests
-        if: matrix.pixi-environment-variant == '-core'
-        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test -- --output-on-failure --verbose
+        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-speed -- --output-on-failure --verbose
 
   test-coverage:
     name: Run tests with coverage

@@ -53,15 +53,18 @@ class TestComm_t_Installed:
     r"""Tests for when a commtype is installed."""
 
     @pytest.fixture(scope="class", params=_commtypes)
-    def commtype(self, request):
+    @classmethod
+    def commtype(cls, request):
         return request.param
 
     @pytest.fixture(scope="class")
-    def commtype_str(self, commtype):
+    @classmethod
+    def commtype_str(cls, commtype):
         return _commtype_map_inv[commtype]
 
     @pytest.fixture(scope="class")
-    def address(self):
+    @classmethod
+    def address(cls):
         return None
 
     @pytest.fixture(params=_testdata)
@@ -77,18 +80,21 @@ class TestComm_t_Installed:
         return request.param
 
     @pytest.fixture(scope="class", autouse=True)
-    def require_installed(self, commtype):
+    @classmethod
+    def require_installed(cls, commtype):
         if not YggInterface.is_comm_installed(commtype):
             pytest.skip(f"Communicator type {commtype} is not installed")
 
     @pytest.fixture(scope="class")
-    def comm_send_kwargs(self, commtype):
+    @classmethod
+    def comm_send_kwargs(cls, commtype):
         if commtype == YggInterface.COMM_TYPE.MPI_COMM:
             return {"address": "0"}
         return {}
 
     @pytest.fixture(scope="class")
-    def comm_recv_kwargs(self, commtype):
+    @classmethod
+    def comm_recv_kwargs(cls, commtype):
         if commtype == YggInterface.COMM_TYPE.MPI_COMM:
             return {"address": "0"}
         return {}
@@ -509,7 +515,8 @@ class TestComm_t_NotInstalled:
     r"""Tests for when a commtype is not installed."""
 
     @pytest.fixture(scope="class", params=_commtypes)
-    def commtype(self, request):
+    @classmethod
+    def commtype(cls, request):
         return request.param
 
     @pytest.fixture(autouse=True)
@@ -659,7 +666,8 @@ class TestFunction(TestComm_t_Installed):
     test_call = None
 
     @pytest.fixture(scope="class")
-    def commtype(self):
+    @classmethod
+    def commtype(cls):
         return YggInterface.COMM_TYPE.FUNCTION_COMM
 
     @pytest.fixture
@@ -675,16 +683,19 @@ class TestFunction(TestComm_t_Installed):
         return (example_transform, ["a", "ab", "abc"], ["1", "2", "3"])
 
     @pytest.fixture(scope="class")
-    def address(self, external_testlib, dynamic_testlib_dir):
+    @classmethod
+    def address(cls, external_testlib, dynamic_testlib_dir):
         parts = external_testlib.rsplit('::', 1)
         parts[1] = os.path.join(dynamic_testlib_dir, parts[1])
         # return f"{external_testlib}::example_model_function"
         return f"{parts[0]}::{parts[1]}::example_model_function"
 
     @pytest.fixture(scope="class")
-    def comm_send_kwargs(self, address):
+    @classmethod
+    def comm_send_kwargs(cls, address):
         return {'address': address}
 
     @pytest.fixture(scope="class")
-    def comm_recv_kwargs(self, address):
+    @classmethod
+    def comm_recv_kwargs(cls, address):
         return {'address': address}

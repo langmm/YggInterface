@@ -75,7 +75,7 @@ outputs:
         - python
         - if: match(python, ">=3.15")
           then: libpython
-        - if: osx:
+        - if: osx
           then: llvm-openmp
         - libcurl
         - openmpi
@@ -221,7 +221,7 @@ outputs:
         - numpy
         - if: match(python, ">=3.15")
           then: libpython
-        - if: osx:
+        - if: osx
           then: llvm-openmp
         - libcurl
         - openmpi
@@ -332,7 +332,7 @@ outputs:
         - if: match(python, ">=3.15")
           then: libpython
         - numpy
-        - if: osx:
+        - if: osx
           then: llvm-openmp
         - libcurl
         - openmpi
