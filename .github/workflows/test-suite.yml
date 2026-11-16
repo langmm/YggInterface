@@ -23,15 +23,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2022]
-        python-install: [pip]  # , conda]
         windows-compiler: [mingw]
         include:
           - os: windows-2022
-            python-install: pip
             windows-compiler: msvc
-          # - os: windows-2022
-          #   python-install: conda
-          #   windows-compiler: msvc
       fail-fast: false
     steps:
       - name: Check out repository code
@@ -43,14 +38,14 @@ jobs:
       # PIP SETUP
       ###################################
       - name: Install dependencies on Ubuntu
-        if: matrix.os == 'ubuntu-latest' && matrix.python-install == 'pip'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libc6-dbg gdb valgrind lcov libcmocka-dev gfortran graphviz doxygen>=1.9.2 libzmq3-dev libgomp1 mpich  # libcurl-dev
           sudo apt upgrade --fix-missing
           valgrind --version
       - name: Install dependencies on Mac
-        if: matrix.os == 'macos-latest' && matrix.python-install == 'pip'
+        if: matrix.os == 'macos-latest'
         run: |
           # brew link --overwrite python@3.11
           brew install cmocka lcov gnutls graphviz doxygen>=1.9.2 curl zeromq libomp open-mpi # llvm
@@ -72,25 +67,14 @@ jobs:
           echo "VCPKG_TRIPLET=x64-windows" >> "$GITHUB_ENV"
           # echo "VCPKG_TRIPLET=x64-windows-static" >> "$GITHUB_ENV"
       - name: Install dependencies on Windows
-        if: matrix.os == 'windows-2022' && matrix.python-install == 'pip'
+        if: matrix.os == 'windows-2022'
         run: |
           vcpkg.exe install cmocka --triplet $env:VCPKG_TRIPLET
           vcpkg.exe install curl --triplet $env:VCPKG_TRIPLET
           vcpkg.exe install zeromq --triplet $env:VCPKG_TRIPLET
           # vcpkg.exe install msmpi --triplet $env:VCPKG_TRIPLET
-      # - name: Set flags for dependencies on Windows
-      #   if: matrix.os == 'windows-2022' && matrix.python-install == 'pip' && matrix.windows-compiler == 'mingw'
-      #   shell: bash -l {0}
-      #   run: |
-      #     echo "CC=gcc.exe" >> "$GITHUB_ENV"
-      #     echo "CXX=c++.exe" >> "$GITHUB_ENV"
-      # - name: Set flags for dependencies on Windows
-      #   if: matrix.os == 'windows-2022' # && matrix.python-install == 'pip'
-      #   shell: bash -l {0}
-      #   run: |
-      #     echo "FC=gfortran.exe" >> "$GITHUB_ENV"
 
-      # RabbitMQ dependencies (don't use the conda package)
+      # RabbitMQ dependencies
       - name: Install RabbitMQ (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -108,81 +92,23 @@ jobs:
           vcpkg.exe install librabbitmq --triplet $env:VCPKG_TRIPLET
 
       - name: Setup Python
-        if: matrix.python-install == 'pip'
         id: pysetup
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHONVERSION }}
       - name: Fix Python path on mac
-        if: matrix.os == 'macos-latest' && matrix.python-install == 'pip'
+        if: matrix.os == 'macos-latest'
         run: |
           tee -a ~/.profile <<<'export PATH="${pythonLocation}/bin:${PATH}"'
           echo "PYTHON=${pythonLocation}/bin/python" >> "$GITHUB_ENV"
-      - name: Install Python dependencies (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Install Python dependencies
         run: |
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-test.txt
 
-      ###################################
-      # CONDA SETUP
-      ###################################
       - name: Set up MSVC Compiler on windows
         uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-2022'
-      - name: Set up miniconda test environment
-        if: matrix.python-install == 'conda'
-        uses: conda-incubator/setup-miniconda@v4
-        with:
-          activate-environment: yggcpp
-          environment-file: environment.yml
-          auto-update-conda: true
-          python-version: ${{ env.PYTHONVERSION }}
-          channels: conda-forge
-          channel-priority: strict
-          conda-remove-defaults: "true"
-          miniforge-version: latest
-      - name: Install LLVM on mac for OpenMP
-        if: matrix.os == 'macos-latest' && matrix.python-install == 'conda'
-        # shell: bash -l {0}
-        run: |
-          conda install llvm -y
-      - name: Install compilers using conda on Linux/Mac
-        if: matrix.os != 'windows-2022' && matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          conda install c-compiler cxx-compiler fortran-compiler
-      - name: Install compilers using conda on Windows for MSVC
-        if: matrix.os == 'windows-2022' && matrix.python-install == 'conda' && matrix.windows-compiler == 'msvc'
-        shell: bash -l {0}
-        run: |
-          conda install c-compiler cxx-compiler
-      - name: Install MinGW on windows for Fortran
-        if: matrix.os == 'windows-2022' && matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          conda install gcc gxx gfortran "binutils<2.45" libpython -y
-      # - name: Install MinGW on windows for Fortran (mingw)
-      #   if: matrix.os == 'windows-2022' && matrix.python-install == 'conda' && matrix.windows-compiler == 'mingw'
-      #   shell: bash -l {0}
-      #   run: |
-      #     conda install gcc gxx gfortran binutils m2w64-sysroot_win-64 libpython -y
-      # - name: Install MinGW on windows for Fortran (msvc)
-      #   if: matrix.os == 'windows-2022' && matrix.python-install == 'conda' && matrix.windows-compiler == 'msvc'
-      #   shell: bash -l {0}
-      #   run: |
-      #     conda install gcc gxx gfortran binutils libpython -y
-      #     # conda install m2w64-gcc-fortran libpython binutils -y
-      - name: Install ZeroMQ (conda)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          conda install zeromq -y
-      # - name: Install RabbitMQ (conda)
-      #   if: matrix.python-install == 'conda'
-      #   shell: bash -l {0}
-      #   run: |
-      #     conda install librabbitmq -y
 
       ###################################
       # GENERIC SETUP
@@ -204,32 +130,26 @@ jobs:
       # CMAKE ENV VARIABLES
       ###################################
       - name: Set CMAKE_INSTALL_PREFIX for local install
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          echo "CMAKE_INSTALL_PREFIX=$CONDA_PREFIX" >> "$GITHUB_ENV"
-      - name: Set CMAKE_INSTALL_PREFIX for local install
-        if: matrix.python-install == 'pip' && matrix.os != 'windows-2022'
+        if: matrix.os != 'windows-2022'
         shell: bash -l {0}
         run: |
           mkdir ../_install
           echo "CMAKE_INSTALL_PREFIX=$(pwd)/../_install" >> "$GITHUB_ENV"
           # echo "CMAKE_INSTALL_PREFIX=${{ github.workspace }}/../_install" >> "$GITHUB_ENV"
       - name: Set CMAKE_INSTALL_PREFIX for local install
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
           mkdir ../_install
           echo "CMAKE_INSTALL_PREFIX=${{ github.workspace }}\\..\\_install" >> "$GITHUB_ENV"
       - name: Install YggdrasilRapidJSON from source
-        if: matrix.python-install == 'pip'
         shell: bash -l {0}
         run: |
           echo "PYTHON=${PYTHON}"
           # ./build_yggdrasil_rapidjson.sh --install-dir ${{ env.CMAKE_INSTALL_PREFIX }}
           ./build_yggdrasil_rapidjson.sh --install-dir $(pwd)/../_install
       - name: Set CMAKE_PREFIX_PATH for local install (Unix)
-        if: matrix.python-install == 'pip' && matrix.os != 'windows-2022'
+        if: matrix.os != 'windows-2022'
         shell: bash -l {0}
         run: |
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
@@ -237,7 +157,7 @@ jobs:
           echo "PYTHON_CONFIG_FLAGS=${{ env.PYTHON_CONFIG_FLAGS }} --config-settings=cmake.define.CMAKE_PREFIX_PATH=${{ env.CMAKE_INSTALL_PREFIX }}" >> "$GITHUB_ENV"
       # If any variables added to PYTHON_CONFIG_FLAGS, need to handle escaping quotes
       - name: Set CMAKE_PREFIX_PATH for local install (Windows)
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
           echo "CMAKE_PREFIX_PATH=${VCPKG_INSTALLATION_ROOT}\installed\\${VCPKG_TRIPLET};${{ env.CMAKE_INSTALL_PREFIX }}" >> "$GITHUB_ENV"
@@ -274,17 +194,12 @@ jobs:
       - name: Set flags so there is an error if an optional dependency isn't found
         shell: bash -l {0}
         run: |
-          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DREQUIRE_ZMQ=ON -DREQUIRE_MPI=ON -DREQUIRE_RMQ=ON -DREQUIRE_THREADS=ON" >> "$GITHUB_ENV"
+          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DREQUIRE_ZMQ=ON -DREQUIRE_MPI=ON -DREQUIRE_RMQ=ON -DREQUIRE_THREADS=ON -DREQUIRE_REST=ON -REQUIRE_OMP=ON" >> "$GITHUB_ENV"
       - name: IPC config flags
         if: matrix.os != 'windows-2022'
         shell: bash -l {0}
         run: |
           echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DREQUIRE_IPC=ON" >> "$GITHUB_ENV"
-      - name: Conda specific optional dependency requirements
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DREQUIRE_REST=ON -DREQUIRE_OMP=ON" >> "$GITHUB_ENV"
           
       - name: Disable debugging config flags (e.g. ELF, valgrind, ASAN)
         shell: bash -l {0}
@@ -292,7 +207,7 @@ jobs:
           echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DYGG_ENABLE_ELF=OFF -DYGG_SKIP_VALGRIND_TESTS=ON" >> "$GITHUB_ENV"
 
       # - name: Pip config flags on Unix & install YggdrasilRapidJSON from source
-      #   if: matrix.python-install == 'pip' && matrix.os != 'windows-2022'
+      #   if: matrix.os != 'windows-2022'
       #   shell: bash -l {0}
       #   run: |
       #     echo "CMAKE_ARGS_NO_PYTHON=${{ env.CMAKE_ARGS_NO_PYTHON }} -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../_install" >> "$GITHUB_ENV"
@@ -302,12 +217,11 @@ jobs:
       # SET CONFIG FLAGS THAT CONTAIN QUOTES LAST
       ############################################
       - name: Pip config flags
-        if: matrix.python-install == 'pip'
         shell: bash -l {0}
         run: |
           echo "CMAKE_ARGS_BASE=${{ env.CMAKE_ARGS_BASE }} \"-DPython3_ROOT_DIR=${{ env.pythonLocation }}\"" >> "$GITHUB_ENV"
       # - name: Pip config flags on Windows & install YggdrasilRapidJSON from source
-      #   if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+      #   if: matrix.os == 'windows-2022'
       #   shell: bash -l {0}
       #   run: |
       #     # echo "CMAKE_ARGS_NO_PYTHON=${{ env.CMAKE_ARGS_NO_PYTHON }} \"-DCMAKE_INSTALL_PREFIX=${{ github.workspace }}\\_install\" \"-DCMAKE_PREFIX_PATH=${VCPKG_INSTALLATION_ROOT}\installed\\${VCPKG_TRIPLET};${{ github.workspace }}\\..\\_install\"" >> "$GITHUB_ENV"
@@ -317,12 +231,12 @@ jobs:
       # Add paths for Windows dlls
       ###################################
       - name: Mingw library paths on Windows (Powershell)
-        if: matrix.os == 'windows-2022' && matrix.python-install == 'pip' # && matrix.windows-compiler == 'mingw'
+        if: matrix.os == 'windows-2022'
         run: |
           # This isn't necessary, but it speeds up the build
           echo "C:\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Mingw library paths on Windows (Bash)
-        if: matrix.os == 'windows-2022' && matrix.python-install == 'pip'
+        if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
           MINGW_BIN_DIRECTORY="C:\mingw64\bin"
@@ -333,19 +247,19 @@ jobs:
           # This isn't necessary, but it speeds up the build
           echo "${MINGW_BIN_DIRECTORY}" >> $GITHUB_PATH
       - name: Check dependencies of dlltool (MINGW)
-        if: matrix.os == 'windows-2022' && matrix.python-install == 'pip'
+        if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
           python cmake/scripts/inspect_runtime_dependencies.py --recurse --verbose dlltool
       - name: Vcpkg library paths on Windows (Powershell)
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         run: |
           echo "$env:VCPKG_INSTALLATION_ROOT\installed\$env:VCPKG_TRIPLET\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "$env:VCPKG_INSTALLATION_ROOT\installed\$env:VCPKG_TRIPLET\lib" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "$env:VCPKG_INSTALLATION_ROOT\installed\$env:VCPKG_TRIPLET\debug\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "$env:VCPKG_INSTALLATION_ROOT\installed\$env:VCPKG_TRIPLET\debug\lib" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Vcpkg library paths on Windows (Bash)
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
           DLL_DIRECTORY="${VCPKG_INSTALLATION_ROOT}\installed\\${VCPKG_TRIPLET}\bin"
@@ -364,50 +278,6 @@ jobs:
           echo "ls LIB_DIRECTORY_D = ${LIB_DIRECTORY_D}"
           ls ${LIB_DIRECTORY_D}
           echo "${LIB_DIRECTORY_D}" >> $GITHUB_PATH
-      - name: Conda library paths on Windows
-        if: matrix.python-install == 'conda' && matrix.os == 'windows-2022'
-        shell: bash -l {0}
-        run: |
-          # Versions nested in Library
-          LIB_DIRECTORY="${CONDA_PREFIX}/Library/lib"
-          echo "ls LIB_DIRECTORY = ${LIB_DIRECTORY}"
-          ls ${LIB_DIRECTORY}
-          echo "${LIB_DIRECTORY}" >> $GITHUB_PATH
-          DLL_DIRECTORY="${CONDA_PREFIX}/Library/bin"
-          echo "ls DLL_DIRECTORY = ${DLL_DIRECTORY}"
-          ls ${DLL_DIRECTORY}
-          echo "${DLL_DIRECTORY}" >> $GITHUB_PATH
-          # Un-nested versions (seems to be the case for current conda)
-          LIB_DIRECTORY="${CONDA_PREFIX}/lib"
-          echo "ls LIB_DIRECTORY = ${LIB_DIRECTORY}"
-          ls ${LIB_DIRECTORY}
-          echo "${LIB_DIRECTORY}" >> $GITHUB_PATH
-      # - name: Conda library paths on Windows (mingw)
-      #   if: matrix.python-install == 'conda' && matrix.os == 'windows-2022' && matrix.windows-compiler == 'mingw'
-      #   shell: bash -l {0}
-      #   run: |
-      #     LIBRARY_DIRECTORY="${CONDA_PREFIX}/Library"
-      #     echo "ls LIBRARY_DIRECTORY = ${LIBRARY_DIRECTORY}"
-      #     ls ${LIBRARY_DIRECTORY}
-      #     MINGW_DIRECOTRY="${CONDA_PREFIX}/Library/mingw-w64"
-      #     echo "ls MINGW_DIRECOTRY = ${MINGW_DIRECOTRY}"
-      #     ls ${MINGW_DIRECOTRY}
-      #     # MINGW_DIRECTORY_INC="${CONDA_PREFIX}/Library/mingw-w64/include"
-      #     # MINGW_DIRECTORY_BIN="${CONDA_PREFIX}/Library/mingw-w64/bin"
-      #     # MINGW_DIRECTORY_LIB="${CONDA_PREFIX}/Library/mingw-w64/lib"
-      #     MIN_DIRECTORY="${CONDA_PREFIX}/Library/mingw-w64/x86_64-w64-mingw32"
-      #     echo "ls MIN_DIRECTORY = ${MIN_DIRECTORY}"
-      #     ls ${MIN_DIRECTORY}
-      #     # MININC_DIRECTORY="${CONDA_PREFIX}/Library/mingw-w64/x86_64-w64-mingw32/include"
-      #     # echo "ls MININC_DIRECTORY=${MININC_DIRECTORY}"
-      #     # ls ${MININC_DIRECTORY}
-      #     # MINLIB_DIRECTORY="${CONDA_PREFIX}/Library/mingw-w64/x86_64-w64-mingw32/lib"
-      #     # echo "ls MINLIB_DIRECTORY=${MINLIB_DIRECTORY}"
-      #     # ls ${MINLIB_DIRECTORY}
-      #     # MINBIN_DIRECTORY="${CONDA_PREFIX}/Library/mingw-w64/x86_64-w64-mingw32/bin"
-      #     # echo "ls MINBIN_DIRECTORY=${MINBIN_DIRECTORY}"
-      #     # ls ${MINBIN_DIRECTORY}
-      #     echo "MINGW_PTHREAD_ROOT=${MIN_DIRECTORY}" >> "$GITHUB_ENV"
       - name: Set CMAKE_GENERATOR for MinGW
         if: matrix.os == 'windows-2022' && matrix.windows-compiler == 'mingw'
         shell: bash -l {0}
@@ -417,15 +287,7 @@ jobs:
       ###################################
       # Check
       ###################################
-      - name: Check installed packages (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          conda list
-          python -c "import sys; print(sys.executable)"
-          python -c "import numpy; print(numpy.get_include())"
-      - name: Check installed packages (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Check installed packages
         run: |
           pip list
           python -c "import sys; print(sys.executable)"
@@ -435,34 +297,25 @@ jobs:
       # Configure
       ###################################
       - name: Remove Strawberry Perl from PATH
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         run: |
           $env:PATH = $env:PATH -replace "C:\\Strawberry\\c\\bin;", ""
           "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           Get-ChildItem -Path C:\Strawberry -Recurse | Remove-Item -force -recurse
           Remove-Item C:\Strawberry -Force
       - name: Remove Java_Temurin-Hotspot_jdk from PATH
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         run: |
           $env:PATH = $env:PATH -replace "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\17.0.19-10\\x64\\bin;", ""
           "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           Get-ChildItem -Path C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk -Recurse | Remove-Item -force -recurse
           Remove-Item C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk -Force
-      - name: Check cmake (PIP)
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+      - name: Check cmake
+        if: matrix.os == 'windows-2022'
         run: |
           where.exe cmake | Write-Output
           where.exe ctest | Write-Output
-      - name: Configure (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          mkdir build
-          cd build
-          which cmake
-          cmake .. ${{ env.CMAKE_ARGS_BASE }} ${{ env.CMAKE_ARGS_NO_PYTHON }} ${{ env.CMAKE_ARGS_TEST }}
-      - name: Configure (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Configure
         run: |
           mkdir build
           cd build
@@ -471,14 +324,7 @@ jobs:
       ###################################
       # Build CXX, C & Fortran
       ###################################
-      - name: Build C++, C, & Fortran Interfaces (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          cd build
-          cmake --build . --config ${{ env.CMAKE_BUILD_TYPE_TEST }}
-      - name: Build C++, C, & Fortran Interfaces (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Build C++, C, & Fortran Interfaces
         run: |
           cd build
           cmake --build . --config ${{ env.CMAKE_BUILD_TYPE_TEST }}
@@ -486,21 +332,7 @@ jobs:
       ###################################
       # Test CXX, C, & Fortran
       ###################################
-      - name: Test C++, C, & Fortran Interfaces (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          conda list
-          echo "PATH=$PATH"
-          cd build
-          which ctest
-          ctest ${{ env.TEST_FLAGS }}
-      - name: Show path (PIP & WINDOWS)
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
-        run: |
-          echo $env:path
-      - name: Test C++, C, & Fortran Interfaces (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Test C++, C, & Fortran Interfaces
         run: |
           echo "PATH=$env:PATH"
           cd build
@@ -514,13 +346,7 @@ jobs:
         run: |
           echo "OLD_CMAKE_ARGS=${{ env.CMAKE_ARGS }}" >> "$GITHUB_ENV"
           echo "CMAKE_ARGS=${{ env.CMAKE_ARGS_BASE }} ${{ env.CMAKE_ARGS_PYTHON }}" >> "$GITHUB_ENV"
-      - name: Build Python (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          python -m pip install . -v ${{ env.PYTHON_CONFIG_FLAGS }}
-      - name: Build Python (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Build Python
         run: |
           python -m pip install . -v ${{ env.PYTHON_CONFIG_FLAGS }}
       - name: Unset CMAKE_ARGS for Python build
@@ -531,45 +357,14 @@ jobs:
       ###################################
       # Test Python
       ###################################
-      - name: Test Python Interfaces (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          pytest -sv tests/python
-      # - name: Check for Python Interfaces (PIP)
-      #   if: matrix.python-install == 'pip'
-      #   shell: bash -l {0}
-      #   run: |
-      #     PYTHON_EXEC=${{ steps.pysetup.outputs.python-path }}
-      #     ${PYTHON_EXEC} -m site
-      #     ${PYTHON_EXEC} -c 'import site; print(site.getsitepackages())'
-      #     ls $(${PYTHON_EXEC} -c 'import site; print(site.getsitepackages()[0])')
-      #     ls $(${PYTHON_EXEC} -c 'import os; import site; print(os.path.join(site.getsitepackages()[0], "pyYggdrasil"))')
-      # - name: Test Python Interfaces w/ LLDB (PIP)
-      #   if: matrix.python-install == 'pip' && matrix.os == 'macos-latest'
-      #   run: |
-      #     lldb -o 'run' -o 'quit' -- $(which python) -m pytest -svx tests/python
-      # - name: Test Python Interfaces w/ GDB (PIP)
-      #   if: matrix.python-install == 'pip' && matrix.os == 'ubuntu-latest'
-      #   run: |
-      #     gdb --batch -x gdb_commands.txt --args $(which python) -m pytest -svx tests/python
-      - name: Test Python Interfaces (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Test Python Interfaces
         run: |
           pytest -sv tests/python
 
       ###################################
       # Install CXX, C & Fortran interfaces
       ###################################
-      - name: Install C++, C, & Fortran (CONDA)
-        if: matrix.python-install == 'conda'
-        shell: bash -l {0}
-        run: |
-          cd build
-          cmake --install .
-          # ctest --output-on-failure -VV
-      - name: Install C++, C, & Fortran (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Install C++, C, & Fortran
         run: |
           cd build
           cmake --install .
@@ -578,18 +373,11 @@ jobs:
       # Speed tests
       ###################################
       - name: Add install directory to path on Windows
-        if: matrix.python-install == 'pip' && matrix.os == 'windows-2022'
+        if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
           echo "${CMAKE_INSTALL_PREFIX}\\bin" >> $GITHUB_PATH
-      - name: Configure speed tests (CONDA)
-        if: matrix.python-install != 'pip'
-        shell: bash -l {0}
-        run: |
-          mkdir build_speed
-          cmake -G Ninja -B build_speed -S tests/speedtest -DCOMM=ALL -DENABLE_Fortran=OFF
-      - name: Configure speed tests (PIP)
-        if: matrix.python-install == 'pip'
+      - name: Configure speed tests
         shell: bash -l {0}
         run: |
           echo "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
@@ -623,22 +411,22 @@ jobs:
         with:
           submodules: true
           fetch-tags: true
-      - name: Set up MSVC Compiler on windows
-        uses: ilammy/msvc-dev-cmd@v1
-        if: matrix.os == 'windows-latest'
-        with:
-          # toolset: "14.3"  # vs2022 set in conda-forge-pinnings
-          toolset: "14.5"  # vs2026 set in conda-forge-pinnings
+      # - name: Set up MSVC Compiler on windows
+      #   uses: ilammy/msvc-dev-cmd@v1
+      #   if: matrix.os == 'windows-latest'
+      #   with:
+      #     # toolset: "14.3"  # vs2022 set in conda-forge-pinnings
+      #     toolset: "14.5"  # vs2026 set in conda-forge-pinnings
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           environments: test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }}
       - name: Show shell hook
         run: pixi shell-hook -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }}
       - name: Run tests
-        if: matrix.pixi-environment-variant != "-core"
+        if: matrix.pixi-environment-variant != '-core'
         run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} all-tests -- --output-on-failure --verbose
       - name: Run tests
-        if: matrix.pixi-environment-variant == "-core"
+        if: matrix.pixi-environment-variant == '-core'
         run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test -- --output-on-failure --verbose
 
   test-coverage:

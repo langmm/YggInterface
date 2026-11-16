@@ -70,21 +70,13 @@ outputs:
         - cmake >=3.16
         - ninja
         - pkgconfig
-        # - libcurl
-        # # - llvm-openmp
-        # - openmpi
-        # - python
-        # - if: unix
-        #   then: sysv_ipc
-        # - yggdrasil-rapidjson >=1.1.0.5
-        # - zeromq
       host:
         - numpy
-        # - pip
         - python
         - if: match(python, ">=3.15")
           then: libpython
-        # - llvm-openmp
+        - if: osx:
+          then: llvm-openmp
         - libcurl
         - openmpi
         - if: unix
@@ -93,7 +85,6 @@ outputs:
         - zeromq
       run:
         - python
-        # - yggdrasil-rapidjson >=1.1.0.5
     tests:
       - package_contents:
           files:
@@ -187,7 +178,6 @@ outputs:
           ENABLE_Fortran: ON
           ENABLE_Python: OFF
           STANDALONE_Fortran: ON
-          # STANDALONE_Fortran_LINK_EXISTING_CXX: ${{ "ON" if fortran_toolchain_variant == cxx_toolchain_variant or fortran_toolchain_variant == "msvc_gnu" and cxx_toolchain_variant == "" else "OFF" }}
         file: build
     requirements:
       run_exports:
@@ -226,22 +216,13 @@ outputs:
         - cmake >=3.16
         - ninja
         - pkgconfig
-        # - libcurl
-        # # - llvm-openmp
-        # - numpy >=1.13.0
-        # - openmpi
-        # - python
-        # - if: unix
-        #   then: sysv_ipc
-        # - yggdrasil-rapidjson >=1.1.0.5
-        # - zeromq
       host:
-        # - pip
         - python
         - numpy
         - if: match(python, ">=3.15")
           then: libpython
-        # - llvm-openmp
+        - if: osx:
+          then: llvm-openmp
         - libcurl
         - openmpi
         - if: unix
@@ -250,7 +231,6 @@ outputs:
         - zeromq
       run:
         - python
-        # - yggdrasil-rapidjson >=1.1.0.5
     tests:
       - package_contents:
           files:
@@ -343,24 +323,17 @@ outputs:
         - ${{ stdlib('c') }}
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
-        # - libcurl
-        # # - llvm-openmp
-        # - openmpi
-        # - if: unix
-        #   then: sysv_ipc
-        # - yggdrasil-rapidjson >=1.1.0.5
-        # - zeromq
       host:
         - hatch-fancy-pypi-readme
         - scikit-build-core
         - setuptools_scm
         - pip
         - python
-        # - ninja
         - if: match(python, ">=3.15")
           then: libpython
         - numpy
-        # - llvm-openmp
+        - if: osx:
+          then: llvm-openmp
         - libcurl
         - openmpi
         - if: unix

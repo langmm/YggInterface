@@ -1,0 +1,336 @@
+context:
+  name: "YggInterface"
+  version: "0.1.0"
+  build_number: 0
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  path: ../
+
+build:
+  number: ${{ build_number }}
+  string: v${{ version | version_to_buildstring }}_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+
+outputs:
+  - package:
+      name: ygginterface-cxx
+    build:
+      script:
+        env:
+          CMAKE_GENERATOR: Ninja
+          ENABLE_CXX: ON
+          ENABLE_Fortran: OFF
+          ENABLE_Python: OFF
+        file: build
+    requirements:
+      run_exports:
+        - ${{ pin_subpackage('ygginterface-cxx', exact=True) }}
+      build:
+        - if: build_platform != host_platform
+          then:
+            - cross-python_${{ host_platform }}
+            - numpy
+            - python
+            - if: match(python, ">=3.15")
+              then: libpython
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake >=3.16
+        - ninja
+        - pkgconfig
+      host:
+        - numpy
+        - python
+        - if: match(python, ">=3.15")
+          then: libpython
+        - libcurl
+        - openmpi
+        - if: unix
+          then: sysv_ipc
+        - yggdrasil-rapidjson >=1.1.0.5
+        - zeromq
+      run:
+        - python
+    tests:
+      - package_contents:
+          files:
+            - if: win
+              then:
+                - Library/cmake/YggInterfaceConfig.cmake
+                - Library/cmake/YggInterface/YggInterfaceConfigVersion.cmake
+                - Library/cmake/YggInterface/YggInterfaceTargets.cmake
+                - Library/cmake/YggInterface/YggInterfaceTargetsSplit-YggInterface.cmake
+                - Library/lib/pkgconfig/YggInterface.pc
+                - Library/lib/YggInterface.lib
+                - Library/bin/YggInterface.dll
+            - if: unix
+              then:
+                - lib/cmake/YggInterface/YggInterfaceConfig.cmake
+                - lib/cmake/YggInterface/YggInterfaceConfigVersion.cmake
+                - lib/cmake/YggInterface/YggInterfaceTargets.cmake
+                - lib/cmake/YggInterface/YggInterfaceTargetsSplit-YggInterface.cmake
+                - lib/pkgconfig/YggInterface.pc
+          lib:
+            - YggInterface
+          include:
+            - YggInterface/YggInterface.hpp
+            - YggInterface/YggInterface.h
+      - script:
+          env:
+            CMAKE_GENERATOR: Ninja
+            ENABLE_CXX: ON
+            ENABLE_Fortran: OFF
+            ENABLE_Python: OFF
+          file: tests/run_test
+        requirements:
+          run:
+            - ${{ stdlib('c') }}
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - flask
+            - ninja
+        files:
+          source:
+            - tests/
+        
+  - package:
+      name: ygginterface-fortran
+    build:
+      string: v${{ version | version_to_buildstring }}$m2w64_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+      script:
+        env:
+          CMAKE_GENERATOR: Ninja
+          ENABLE_CXX: OFF
+          ENABLE_Fortran: ON
+          ENABLE_Python: OFF
+          STANDALONE_Fortran: ON
+        file: build
+    requirements:
+      run_exports:
+        - ${{ pin_subpackage('ygginterface-fortran', exact=True) }}
+      build:
+        - if: build_platform != host_platform
+          then:
+            - cross-python_${{ host_platform }}
+            - numpy
+            - python
+            - if: match(python, ">=3.15")
+              then: libpython
+        - binutils <2.43
+        - if: unix
+          then:
+            - ${{ stdlib('c') }}
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - ${{ compiler('fortran') }}
+        - if: win
+          then:
+            - ${{ stdlib('m2w64_c') }}
+            - ${{ compiler('m2w64_c') }}
+            - ${{ compiler('m2w64_cxx') }}
+            - ${{ compiler('m2w64_fortran') }}
+        - cmake >=3.16
+        - ninja
+        - pkgconfig
+      host:
+        - python
+        - numpy
+        - if: match(python, ">=3.15")
+          then: libpython
+        - libcurl
+        - openmpi
+        - if: unix
+          then: sysv_ipc
+        - yggdrasil-rapidjson >=1.1.0.5
+        - zeromq
+      run:
+        - python
+    tests:
+      - package_contents:
+          files:
+            - if: win
+              then:
+                - Library/cmake/YggInterfaceConfig.cmake
+                - Library/cmake/YggInterface/YggInterfaceConfigVersion.cmake
+                - Library/cmake/YggInterface/YggInterfaceTargets.cmake
+                - Library/cmake/YggInterface/YggInterfaceTargetsSplit-YggInterface_fortran.cmake
+                - Library/lib/pkgconfig/YggInterface_fortran.pc
+                - Library/lib/libYggInterface_fortran.dll.a
+                - Library/bin/libYggInterface_fortran.dll
+            - if: unix
+              then:
+                - lib/cmake/YggInterface/YggInterfaceConfig.cmake
+                - lib/cmake/YggInterface/YggInterfaceConfigVersion.cmake
+                - lib/cmake/YggInterface/YggInterfaceTargets.cmake
+                - lib/cmake/YggInterface/YggInterfaceTargetsSplit-YggInterface_fortran.cmake
+                - lib/pkgconfig/YggInterface_fortran.pc
+          lib:
+            # rattler-build dosn't know to look for mingw style libraries
+            - if: unix
+              then:
+                - YggInterface_fortran
+          include:
+            - YggInterface/ygginterface.mod
+      - script:
+          env:
+            CMAKE_GENERATOR: Ninja
+            ENABLE_CXX: OFF
+            ENABLE_Fortran: ON
+            ENABLE_Python: OFF
+          file: tests/run_test
+        requirements:
+          # TODO: Minimal requirements for testing
+          run:
+            - if: unix
+              then:
+                - ${{ compiler('fortran') }}
+            - if: win
+              then:
+                - ${{ compiler('m2w64_fortran') }}
+            - cmake
+            - flask
+            - ninja
+        files:
+          source:
+            - tests/
+        
+  - package:
+      name: ygginterface-python
+    build:
+      string: v${{ version | version_to_buildstring }}_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+      script:
+        env:
+          CMAKE_GENERATOR: Ninja
+          ENABLE_CXX: OFF
+          ENABLE_Fortran: OFF
+          ENABLE_Python: ON
+        file: build_python
+    requirements:
+      build:
+        - if: build_platform != host_platform
+          then:
+            - cross-python_${{ host_platform }}
+            - numpy
+            - python
+            - if: match(python, ">=3.15")
+              then: libpython
+        - cmake >=3.16
+        - pkgconfig
+        - ninja
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+      host:
+        - hatch-fancy-pypi-readme
+        - scikit-build-core
+        - setuptools_scm
+        - pip
+        - python
+        - if: match(python, ">=3.15")
+          then: libpython
+        - numpy
+        # - llvm-openmp
+        - libcurl
+        - openmpi
+        - if: unix
+          then: sysv_ipc
+        - yggdrasil-rapidjson >=1.1.0.5
+        - zeromq
+      run:
+        - python
+    tests:
+      - python:
+          imports:
+            - YggInterface
+      - script:
+          - pytest -sv tests/python
+        requirements:
+          run:
+            - pytest
+            - flask
+        files:
+          source:
+            - tests/
+      - script:
+          env:
+            CMAKE_GENERATOR: Ninja
+            ENABLE_CXX: OFF
+            ENABLE_Fortran: OFF
+            ENABLE_Python: ON
+          file: tests/run_test
+        requirements:
+          run:
+            - cmake
+            - ninja
+        files:
+          source:
+            - tests/
+
+  - package:
+      name: ygginterface
+    build:
+      script:
+    requirements:
+      run:
+        - ${{ pin_subpackage('ygginterface-cxx', exact=True) }}
+        - ${{ pin_subpackage('ygginterface-fortran', exact=True) }}
+        - ${{ pin_subpackage('ygginterface-python', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - YggInterface
+      - script:
+          env:
+            CMAKE_GENERATOR: Ninja
+            ENABLE_CXX: ON
+            ENABLE_Fortran: ON
+            ENABLE_Python: ON
+          file: tests/run_test
+        requirements:
+          run:
+            - flask
+            - ninja
+            - cmake
+            - ${{ stdlib('c') }}
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - if: unix
+              then:
+                - ${{ compiler('fortran') }}
+            - if: win
+              then:
+                - ${{ stdlib('m2w64_c') }}
+                - ${{ compiler('m2w64_c') }}
+                - ${{ compiler('m2w64_cxx') }}
+                - ${{ compiler('m2w64_fortran') }}
+        files:
+          source:
+            - tests/
+
+about:
+  homepage: https://github.com/langmm/yggcpp
+  repository: https://github.com/langmm/yggcpp
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: A framework for connecting computational models from multiple languages.
+  description: |
+    The Crops in Silico (CiS) framework, yggdrasil, provides support for
+    connecting scientific models written in different programming languages.
+    To connect two models, modelers add communications interfaces to the model code
+    and provide declarative specification files that identfy the
+    models that should be run and the inputs and outputs those models
+    expect. yggdrasil uses this information to launch the models
+    on parallel processes and orchestrate asynchronous communication between them.
+    Although designed for connecting crop models, yggdrasil can be used to
+    connect scientific models from any domain.
+  documentation: https://cropsinsilico.github.io/yggcpp
+
+extra:
+  recipe-maintainers:
+    - langmm
