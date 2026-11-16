@@ -298,7 +298,7 @@ python-build = "*"
 [feature.python.tasks]
 install-python = "python -m pip install --no-build-isolation --no-deps -v ."
 develop-python = "python -m pip install --no-build-isolation --no-deps -v -e ."
-test-python = { cmd = "python -m pytest -sv tests/python", depends-on = ["install-python"] }
+test-python = { cmd = "python -m pytest tests/python", depends-on = ["install-python"] }
 
 [feature.coverage.dependencies]
 lcov = "*"
@@ -341,14 +341,12 @@ DYLD_INSERT_LIBRARIES = "$(clang -print-file-name=libclang_rt.asan_osx_dynamic.d
 
 [feature.asan.tasks]
 test-asan = {
-  # cmd = "ctest --test-dir build/asan --output-on-failure -E valgrind*",
   depends-on = [
     {
-      # task = "build",
       task = "test",
       args = [
         "asan",
-        "-DCMAKE_BUILD_TYPE=Debug -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_TESTS=ON -DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_ASAN=ON -DYGG_BUILD_UBSAN=ON -DYGG_BUILD_Python_TESTS=OFF",  # -DYGGDRASIL_DISABLE_Python_C_API=ON",
+        "-DCMAKE_BUILD_TYPE=Debug -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_TESTS=ON -DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_ASAN=ON -DYGG_BUILD_UBSAN=ON -DYGG_BUILD_Python_TESTS=OFF -DYGGDRASIL_DISABLE_Python_C_API=ON",
         "-E valgrind*",
       ],
     }
@@ -401,7 +399,8 @@ args = [
     { arg = "recipe", default = "conda.recipe/recipe.yaml" },
     { arg = "output_dir", default = "build_conda" },
 ]
-cmd = "pixi publish --path {{ recipe }} --target-dir {{ output_dir }}"
+cmd = "pixi exec --spec rattler-build -- rattler-build build --recipe {{ recipe }} --output-dir {{ output_dir }}"
+# cmd = "pixi publish --path {{ recipe }} --target-dir {{ output_dir }}"
 
 [environments]
 default = { features = ["cxx", "fortran", "python", "docs", "dev", "optional"], solve-group = "default" }

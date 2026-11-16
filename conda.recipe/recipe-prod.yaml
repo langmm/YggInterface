@@ -101,7 +101,7 @@ outputs:
   - package:
       name: ygginterface-fortran
     build:
-      string: v${{ version | version_to_buildstring }}$m2w64_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+      string: v${{ version | version_to_buildstring }}${{ _m2w64_py if win }}${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
       script:
         env:
           CMAKE_GENERATOR: Ninja
@@ -121,7 +121,6 @@ outputs:
             - python
             - if: match(python, ">=3.15")
               then: libpython
-        - binutils <2.43
         - if: unix
           then:
             - ${{ stdlib('c') }}
@@ -130,6 +129,7 @@ outputs:
             - ${{ compiler('fortran') }}
         - if: win
           then:
+            # - binutils <2.43
             - ${{ stdlib('m2w64_c') }}
             - ${{ compiler('m2w64_c') }}
             - ${{ compiler('m2w64_cxx') }}

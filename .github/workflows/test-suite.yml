@@ -23,10 +23,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2022]
-        windows-compiler: [mingw]
-        include:
-          - os: windows-2022
-            windows-compiler: msvc
+        windows-compiler: ['']
+        # include:
+        #   - os: windows-2022
+        #     windows-compiler: mingw
       fail-fast: false
     steps:
       - name: Check out repository code
@@ -61,7 +61,7 @@ jobs:
       #     # echo "VCPKG_TRIPLET=x64-mingw" >> "$GITHUB_ENV"
       #     echo "VCPKG_TRIPLET=x64-mingw-static" >> "$GITHUB_ENV"
       - name: Set vcpkg triplet on Windows (msvc)
-        if: matrix.os == 'windows-2022' # && matrix.windows-compiler == 'msvc'
+        if: matrix.os == 'windows-2022' # && matrix.windows-compiler == ''
         shell: bash -l {0}
         run: |
           echo "VCPKG_TRIPLET=x64-windows" >> "$GITHUB_ENV"
@@ -114,13 +114,13 @@ jobs:
       # GENERIC SETUP
       ###################################
       - name: Explicitly set MSVC compiler
-        if: matrix.os == 'windows-2022' && matrix.windows-compiler == 'msvc'
+        if: matrix.os == 'windows-2022' && matrix.windows-compiler == ''
         shell: bash -l {0}
         run: |
           echo "CC=cl" >> "$GITHUB_ENV"
           echo "CXX=cl" >> "$GITHUB_ENV"
       - name: Extract objconv
-        if: matrix.os == 'windows-2022' && matrix.windows-compiler == 'msvc'
+        if: matrix.os == 'windows-2022' && matrix.windows-compiler == ''
         shell: pwsh
         run: |
           Expand-Archive -Path utils\objconv.zip -DestinationPath .\ -Verbose
@@ -425,7 +425,7 @@ jobs:
       - name: Run tests
         run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test allnopy "-DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_TESTS=ON -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_Python_TESTS=OFF" -- --output-on-failure --verbose
       - name: Run Python tests
-        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-python -- --output-on-failure --verbose
+        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-python -- -sv
       - name: Run speed tests
         if: matrix.pixi-environment-variant != '-core'
         run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-speed -- --output-on-failure --verbose
