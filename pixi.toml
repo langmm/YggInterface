@@ -148,7 +148,7 @@ install = {
 }
 configure-speed = {
   cmd = """
-  {% if prefix[0] == '/' or (pixi.is_win and ':' in prefix) %}
+  {% if prefix[0] == '/' or prefix[0] == '$' or (pixi.is_win and ':' in prefix) %}
     cmake -S tests/speedtest -B build/speed -G Ninja -DCOMM=ALL -DCMAKE_PREFIX_PATH={{ prefix }}
   {% else %}
     cmake -S tests/speedtest -B build/speed -G Ninja -DCOMM=ALL -DCMAKE_PREFIX_PATH={{ pixi.init_cwd }}/{{ prefix }}
@@ -164,7 +164,11 @@ configure-speed = {
   depends-on = [
     {
       task = "install",
-      args = ["--prefix", "{{ prefix }}"],
+      args = [
+          "--prefix",
+          # Expand the variable if it was provided escaped
+          "{% if prefix[0] == '$' %}'{{ prefix }}'{% else %}{{ prefix }}{% endif %}"
+      ],
     },
   ],
 }
@@ -347,7 +351,7 @@ test-asan = {
       task = "test",
       args = [
         "asan",
-        "-DCMAKE_BUILD_TYPE=Debug -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_TESTS=ON -DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_ASAN=ON -DYGG_BUILD_UBSAN=ON -DYGG_BUILD_Python_TESTS=OFF -DYGGDRASIL_DISABLE_Python_C_API=ON -DENABLE_MPI=OFF REQUIRE_MPI=OFF -DBUILD_Fortran_LIBRARY=OFF",
+        "-DCMAKE_BUILD_TYPE=Debug -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_TESTS=ON -DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_ASAN=ON -DYGG_BUILD_UBSAN=ON -DYGG_BUILD_Python_TESTS=OFF -DYGGDRASIL_DISABLE_Python_C_API=ON -DENABLE_MPI=OFF -DREQUIRE_MPI=OFF -DBUILD_Fortran_LIBRARY=OFF",
         "-E valgrind*",
       ],
     }

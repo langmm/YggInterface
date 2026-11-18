@@ -426,9 +426,10 @@ jobs:
         run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test allnopy "-DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_TESTS=ON -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_Python_TESTS=OFF" -- --output-on-failure --verbose
       - name: Run Python tests
         run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-python -- -sv
+      # Do this one last, because it requires install
       - name: Run speed tests
         if: matrix.pixi-environment-variant != '-core'
-        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-speed -- --output-on-failure --verbose
+        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-speed '\$CONDA_PREFIX' -- --output-on-failure --verbose
 
   test-coverage:
     name: Run tests with coverage
