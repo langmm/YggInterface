@@ -92,6 +92,7 @@ option(YGG_INSPECT_TARGETS_ONLY_MISSING "Show library links that cannot be resol
 if(YGG_INSPECT_TARGETS_ONLY_MISSING)
   set(YGG_INSPECT_TARGETS ON)
 endif()
+option(YGG_GENERATE_ENUMS "Generate the enum helper files from enums.hpp" OFF)
 
 # Set this early so they can be used in code generation
 set(YGG_TARGET_CXX YggInterface)
@@ -528,26 +529,28 @@ ygginterface_version_header(
 # Regenerate enum files #
 #########################
 
-if (YGG_Fortran_WRAP_C_ENUMS)
-  list(
-    APPEND GENERATE_ENUM_ARGS --fortran-wrap-c-enums
-    --fortran-target ${YGG_TARGET_Fortran}
+if (YGG_GENERATE_ENUMS)
+  if (YGG_Fortran_WRAP_C_ENUMS)
+    list(
+      APPEND GENERATE_ENUM_ARGS --fortran-wrap-c-enums
+      --fortran-target ${YGG_TARGET_Fortran}
+    )
+  endif()
+  python_code_generation(
+    enum utils/generate_enum.py
+    ARGUMENTS ${GENERATE_ENUM_ARGS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCES
+    cpp/include/utils/enums.hpp
+    ${YGG_TARGET_Fortran_NAME}
+    BYPRODUCTS
+    cpp/include/utils/enums_maps.hpp
+    cpp/src/utils/enums_maps.cpp
+    fortran/c_wrappers_enums.h
+    fortran/c_wrappers_enums.c
+    fortran/YggInterface_enums.F90
   )
 endif()
-python_code_generation(
-  enum utils/generate_enum.py
-  ARGUMENTS ${GENERATE_ENUM_ARGS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  SOURCES
-  cpp/include/utils/enums.hpp
-  ${YGG_TARGET_Fortran_NAME}
-  BYPRODUCTS
-  cpp/include/utils/enums_maps.hpp
-  cpp/src/utils/enums_maps.cpp
-  fortran/c_wrappers_enums.h
-  fortran/c_wrappers_enums.c
-  fortran/YggInterface_enums.F90
-)
 
 ########################################
 # Generate yggdrasil_rapidjson wrapper #

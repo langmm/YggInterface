@@ -2,6 +2,7 @@ context:
   name: "YggInterface"
   version: "0.1.0"
   build_number: 0
+  m2w64_suffix: "_m2w64"
 
 recipe:
   name: ${{ name|lower }}
@@ -101,7 +102,7 @@ outputs:
   - package:
       name: ygginterface-fortran
     build:
-      string: v${{ version | version_to_buildstring }}${{ _m2w64_py if win }}${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+      string: v${{ version | version_to_buildstring }}${{ m2w64_suffix if win }}_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
       script:
         env:
           CMAKE_GENERATOR: Ninja

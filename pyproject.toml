@@ -51,6 +51,7 @@ wheel.install-dir = "YggInterface"
 build.verbose = true
 editable.verbose = true
 cmake.build-type = "Release"
+cmake.args = ["-G", "Ninja"]
 
 # [tool.setuptools_scm]
 # version_file = "_version.py"

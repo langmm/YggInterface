@@ -55,9 +55,9 @@ sysv_ipc = "*"
 llvm-openmp = "*"
 
 [activation.env]
-CMAKE_GENERATOR = "Ninja"
 YGGINTERFACE_CONFIGURE_FLAGS_BASE = "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DBUILD_CXX_LIBRARY=ON -DBUILD_Fortran_LIBRARY=ON -DBUILD_Python_LIBRARY=ON -DYGG_SKIP_VALGRIND_TESTS=ON -DYGG_ENABLE_ELF=OFF -DENABLE_RMQ=OFF"
 YGGINTERFACE_CONFIGURE_FLAGS_BASE2 = ""
+SKBUILD_CMAKE_ARGS = "-G Ninja"
 SKBUILD_CMAKE_DEFINE = "CMAKE_PREFIX_PATH=$CONDA_PREFIX;ENABLE_RMQ=OFF"
 
 # Add any of these for debugging
@@ -80,6 +80,7 @@ YGGINTERFACE_CONFIGURE_FLAGS_BASE2 = "-DENABLE_ZMQ=OFF -DENABLE_MPI=OFF -DENABLE
 SKBUILD_CMAKE_DEFINE = "CMAKE_PREFIX_PATH=$CONDA_PREFIX;ENABLE_ZMQ=OFF;ENABLE_MPI=OFF;ENABLE_RMQ=OFF;ENABLE_THREADS=OFF;ENABLE_REST=OFF;ENABLE_OMP=OFF"
 
 [tasks]
+clean-ipcs = "ipcs -q | awk 'NR>3 {print $2}' | xargs -I {} ipcrm -q {}"
 clean = "python -c \"import glob, shutil; [shutil.rmtree(p, ignore_errors=True) for p in glob.glob('build*') + ['_install', '_skbuild', 'conda_build']]\""
 configure = {
   cmd = "cmake -S . -B build/{{ name }} $YGGINTERFACE_CONFIGURE_FLAGS_BASE $YGGINTERFACE_CONFIGURE_FLAGS_BASE2 {{ configure_flags }}",
@@ -346,7 +347,7 @@ test-asan = {
       task = "test",
       args = [
         "asan",
-        "-DCMAKE_BUILD_TYPE=Debug -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_TESTS=ON -DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_ASAN=ON -DYGG_BUILD_UBSAN=ON -DYGG_BUILD_Python_TESTS=OFF -DYGGDRASIL_DISABLE_Python_C_API=ON",
+        "-DCMAKE_BUILD_TYPE=Debug -DBUILD_Python_LIBRARY=OFF -DYGG_BUILD_TESTS=ON -DYGG_Fortran_REQUIRED=ON -DYGG_BUILD_ASAN=ON -DYGG_BUILD_UBSAN=ON -DYGG_BUILD_Python_TESTS=OFF -DYGGDRASIL_DISABLE_Python_C_API=ON -DENABLE_MPI=OFF REQUIRE_MPI=OFF -DBUILD_Fortran_LIBRARY=OFF",
         "-E valgrind*",
       ],
     }
@@ -393,14 +394,24 @@ changelog = {
 [feature.build-conda.dependencies]
 rattler-build = "*"
 
-[feature.build-conda.tasks.build-conda]
+[feature.build-conda.tasks.build-conda-publish]
+# This version of the task requires that the name of the recipe file
+#   matches one of the standards and is used to determine the format
+#   (e.g. v0 vs. v1).
 description = "Build conda package with pixi publish"
 args = [
     { arg = "recipe", default = "conda.recipe/recipe.yaml" },
     { arg = "output_dir", default = "build_conda" },
 ]
+cmd = "pixi publish --path {{ recipe }} --target-dir {{ output_dir }}"
+
+[feature.build-conda.tasks.build-conda]
+description = "Build conda package with pixi exec"
+args = [
+    { arg = "recipe", default = "conda.recipe/recipe.yaml" },
+    { arg = "output_dir", default = "build_conda" },
+]
 cmd = "pixi exec --spec rattler-build -- rattler-build build --recipe {{ recipe }} --output-dir {{ output_dir }}"
-# cmd = "pixi publish --path {{ recipe }} --target-dir {{ output_dir }}"
 
 [environments]
 default = { features = ["cxx", "fortran", "python", "docs", "dev", "optional"], solve-group = "default" }
