@@ -20,6 +20,13 @@ cmake -G Ninja ^
       -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON ^
       -D CMAKE_MESSAGE_LOG_LEVEL:STRING=DEBUG ^
       -D CMAKE_BUILD_PARALLEL_LEVEL=1 ^
+      -D CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS=1 ^
+      -D CMAKE_CXX_USE_RESPONSE_FILE_FOR_LIBRARIES=1 ^
+      -D CMAKE_CXX_RESPONSE_FILE_LINK_FLAG="@" ^
+      -D CMAKE_Fortran_USE_RESPONSE_FILE_FOR_OBJECTS=1 ^
+      -D CMAKE_Fortran_USE_RESPONSE_FILE_FOR_LIBRARIES=1 ^
+      -D CMAKE_Fortran_RESPONSE_FILE_LINK_FLAG="@" ^
+      -D CMAKE_NINJA_FORCE_RESPONSE_FILE=1 ^
       ..\\tests\\speedtest
 if !errorlevel! neq 0 exit /b !errorlevel!
 cmake --build . --config Release

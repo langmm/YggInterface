@@ -1286,8 +1286,8 @@ int Comm_t::vSend(yggdrasil_rapidjson::VarArgList& ap) {
 }
 long Comm_t::call(const yggdrasil_rapidjson::Document& sendData,
 		  yggdrasil_rapidjson::Document& recvData) {
-  if (!(flags & COMM_FLAG_CLIENT)) {
-    log_error() << "call: Communicator is not a client." << std::endl;
+  if (!((flags & COMM_FLAG_CLIENT) || (getType() == FUNCTION_COMM))) {
+    log_error() << "call: Communicator is not a client or function." << std::endl;
     return -1;
   }
   if (send(sendData) < 0) {
@@ -1297,7 +1297,7 @@ long Comm_t::call(const yggdrasil_rapidjson::Document& sendData,
   return recv(recvData);
 }
 long Comm_t::vCall(yggdrasil_rapidjson::VarArgList& ap) {
-  if (!(flags & COMM_FLAG_CLIENT)) {
+  if (!((flags & COMM_FLAG_CLIENT) || (getType() == FUNCTION_COMM))) {
     log_error() << "vCall: Communicator is not a client." << std::endl;
     return -1;
   }

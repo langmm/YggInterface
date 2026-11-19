@@ -70,7 +70,7 @@ jobs:
             python-version: "3.11"
             recipe: recipe
             variant: flang
-            variant-flags: "--variant fortran_compiler=flang"
+            variant-flags: "--variant fortran_compiler=flang fortran_compiler_version=18"
             vs-version: ""
             vs-toolset-version: ""
           - os: windows-latest
