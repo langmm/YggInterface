@@ -190,7 +190,7 @@ jobs:
         if: matrix.os == 'windows-2022'
         shell: bash -l {0}
         run: |
-          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DENABLE_MPI=OFF -DENABLE_RMQ=OFF -DENABLE_REST=OFF -DENABLE_OMP=OFF" >> "$GITHUB_ENV"
+          echo "CMAKE_ARGS_TEST=${{ env.CMAKE_ARGS_TEST }} -DENABLE_MPI=ON -DENABLE_RMQ=OFF -DENABLE_REST=OFF -DENABLE_OMP=OFF" >> "$GITHUB_ENV"
       - name: Set flags so there is an error if an optional dependency isn't found
         shell: bash -l {0}
         run: |
@@ -429,7 +429,7 @@ jobs:
       # Do this one last, because it requires install
       - name: Run speed tests
         if: matrix.pixi-environment-variant != '-core'
-        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-speed '\$CONDA_PREFIX' -- --output-on-failure --verbose
+        run: pixi run -e test-${{ matrix.pixi-environment }}${{ matrix.pixi-environment-variant }} test-speed "\$CONDA_PREFIX" -- --output-on-failure --verbose
 
   test-coverage:
     name: Run tests with coverage

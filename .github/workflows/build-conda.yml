@@ -123,10 +123,10 @@ jobs:
 
       - name: Build the conda package
         if: matrix.vs-version == ''
-        run: pixi run -e build-conda build-conda conda.recipe/${{ matrix.recipe }}.yaml -- --variant python=${{ matrix.python-version }} ${{ matrix.variant-flags }}
+        run: pixi run -e build-conda build-conda conda.recipe/${{ matrix.recipe }}.yaml -- --variant python=${{ matrix.python-version }} ${{ matrix.variant-flags }} --no-build-id --no-include-recipe
       - name: Build the conda package (specific MSVC version)
         if: matrix.vs-version != ''
-        run: pixi run -e build-conda build-conda conda.recipe/${{ matrix.recipe }}.yaml -- --variant python=${{ matrix.python-version }} ${{ matrix.variant-flags }} --variant c_compiler=${{ matrix.vs-version }} --variant cxx_compiler=${{ matrix.vs-version }}
+        run: pixi run -e build-conda build-conda conda.recipe/${{ matrix.recipe }}.yaml -- --variant python=${{ matrix.python-version }} ${{ matrix.variant-flags }} --variant c_compiler=${{ matrix.vs-version }} --variant cxx_compiler=${{ matrix.vs-version }} --no-build-id --no-include-recipe
 
   all_recipes_built:
     runs-on: ubuntu-latest
